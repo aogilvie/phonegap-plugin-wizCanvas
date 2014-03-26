@@ -987,6 +987,7 @@
 				);
 				PRODUCT_NAME = exampleWizCanvas;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = "armv7 armv7s arm64";
 			};
 			name = Debug;
 		};
@@ -1006,6 +1007,7 @@
 					"$(inherited)",
 					"\"$(SRCROOT)/exampleWizCanvas/Plugins/jp.wizcorp.phonegap.plugin.wizCanvasPlugin/lib\"",
 				);
+				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
 					"-weak_framework",
 					CoreFoundation,
@@ -1022,6 +1024,7 @@
 				);
 				PRODUCT_NAME = exampleWizCanvas;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = "armv7 armv7s arm64";
 			};
 			name = Release;
 		};
