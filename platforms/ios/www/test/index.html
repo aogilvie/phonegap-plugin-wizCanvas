@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<!--
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+#  KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+-->
+  <head>
+  <title></title>
+  
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no;" />
+	<meta charset="utf-8">
+
+	<!-- iPad/iPhone specific css below, add after your main css >
+	<link rel="stylesheet" media="only screen and (max-device-width: 1024px)" href="ipad.css" type="text/css" />		
+	<link rel="stylesheet" media="only screen and (max-device-width: 480px)" href="iphone.css" type="text/css" />		
+	-->
+	
+	<link rel="stylesheet" href="common/tests.css">
+	
+	<!-- Load Cordova -->
+	<script type="text/javascript" charset="utf-8" src="../cordova.js"></script>
+    <script type="text/javascript">
+
+    	// If you want to prevent dragging, uncomment this section
+    	/*
+    	function preventBehavior(e) 
+    	{ 
+          e.preventDefault(); 
+        };
+    	document.addEventListener("touchmove", preventBehavior, false);
+    	*/
+    	
+    	/* If you are supporting your own protocol, the var invokeString will contain any arguments to the app launch.
+    	see http://iphonedevelopertips.com/cocoa/launching-your-own-application-via-a-custom-url-scheme.html
+    	for more details -jm */
+    	/*
+    	function handleOpenURL(url)
+    	{
+    		// TODO: do something with the url passed in.
+    	}
+    	*/
+    	
+    	function onBodyLoad()
+    	{		
+    		document.addEventListener("deviceready", onDeviceReady, false);
+    	}
+    	
+    	/* When this function is called, Cordova has been initialized and is ready to roll */
+    	/* If you are supporting your own protocol, the var invokeString will contain any arguments to the app launch.
+    	see http://iphonedevelopertips.com/cocoa/launching-your-own-application-via-a-custom-url-scheme.html
+    	for more details -jm */
+    	function onDeviceReady()
+    	{
+            if (!window.wizCanvas || !window.wizCanvasMessenger) {
+    
+                if (!window.wizCanvas) {
+                    alert("Could not find wizCanvas");
+                }
+                if (!window.wizCanvasMessenger) {
+                    alert("Could not find wizCanvasMessenger");
+                }
+    
+                return;
+            }
+    
+            // Create canvas and load the test suite
+            createCanvasView();
+        }
+            
+        function createCanvasView() {
+            wizCanvas.create("newCanvas", { src: "test/index.js", height: 300, width: "100%", bottom: 0, backgroundColor: "transparent" }, onCanvasSuccess, onFail);
+        }
+        
+        var onCanvasSuccess = function() {
+            console.log("Created canvas!");
+            
+            // Show the canvas
+            showCanvasView();
+        }
+        
+        function removeCanvasView() {
+            wizCanvas.remove("newCanvas",
+            function () { console.log("Remove canvas success") }, 
+            function () { console.log("Remove canvas failure") });
+        }
+        
+        function showCanvasView() {
+            wizCanvas.show("newCanvas",
+             { animation: { type: "fadeIn", duration: 150 } }, 
+             function () { 
+                console.log("Show canvas success");
+             }, 
+             function () { console.log("Show canvas failure") });
+        }
+        
+        window.addEventListener('message', wizMessageReceiver, false);   
+         
+        function wizMessageReceiver(e) {
+    
+            if (e.data.newTest) {
+                document.getElementById('test-title').innerHTML = e.data.newTest;
+            }
+            
+            if (e.data.result) {
+           
+                var result = e.data.result;
+                
+                if (result === "finished") {
+                    // Show Errors
+                    document.getElementById('test-title').innerHTML = "Results:";
+                    displayResults();
+                    return;			
+                }
+    
+                if (result === "success") {
+        			document.getElementById('d').innerHTML = '<li>Passed</li>';
+        			document.documentElement.className = 'pass';
+        			window._testStatus = ['pass', document.getElementById('d').innerHTML];
+                }
+    
+                if (result === "fail") {
+                    // Stop testing
+                    document.getElementById('d').innerHTML = '<li>' + e.data.message + '</li>';
+        			document.documentElement.className = 'fail';
+        			window._testStatus = ['fail', document.getElementById('d').innerHTML];
+        			
+        			// Add to error stack
+        			testResults.addError(e.data.testId, e.data.message);			
+                }
+                
+                var nextTestId = e.data.testId + 1;
+                // Next test
+        		nextTest(nextTestId);
+            }
+        }
+        
+        function nextTest(nextTestId) {
+    		setTimeout(function () {
+    			var msg = { nextTestId: nextTestId };
+    			wizCanvasMessenger.postMessage(msg, "newCanvas");
+    		}, 300);
+        }
+        
+        function displayResults () {
+            var errors = testResults.getErrors();
+            document.getElementById('d').innerHTML = "<h2>" + errors.length + " errors.</h2>";
+            document.getElementById('backing').style.display = "none";
+            
+            if (errors.length > 0) {
+                document.documentElement.className = 'fail';
+            }
+            var summary = "";
+            for (var i = 0; i < errors.length; i ++) {
+                summary += '<li><b>Test: #' + errors[i].testId + '</b></li><ul><li>' + errors[i].error + '</li></ul>';
+            }
+            document.getElementById('d').innerHTML += summary;
+            wizCanvas.hide("newCanvas", {});
+        }
+        var testResults = {
+            errors: [],
+            
+            getErrors: function () {
+        		return this.errors;
+            },
+            
+            addError: function (testId, error) {
+                this.errors.push({ testId: testId, error: error });
+            }
+        };
+        
+        var onSuccess = function (data) {
+            alert("success " + data);
+        }
+        
+        var onFail = function (e) {
+            alert("error = "+e);
+        }
+    
+	</script>
+    </head>
+    <body onload="onBodyLoad()">
+        <h1 id=test-title>Ejecta Canvas Test Suite</h1>
+        <p style="height:280px" class="output">
+            <ul id="d"></ul>
+        </p>
+        <div id=backing style="height: 300px; width: 100%; background-color: #000; padding: 0; float: left; position: absolute; bottom: 0;"></div>
+    </body>
+</html>
