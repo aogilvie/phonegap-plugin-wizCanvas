@@ -1,2 +1,2 @@
 console.log("Hello World!");
-var maxCurves = 140;
+maxCurves = 140;

@@ -212,42 +212,34 @@ public class WizCanvas extends View {
     public void load(Activity act, String source) {
         // Check remote or local source
         try {
-            URL u = new URL(source);    // Check for the protocol
-            u.toURI();                  // Extra checking required for validation of URI
+            final URL _u = new URL(source);    // Check for the protocol
+            _u.toURI();                  // Extra checking required for validation of URI
 
             // If we did not fall out here then source is a valid URI
             Log.d(TAG, "load URL: " + source);
 
             // Download URL source to data/data/<package_name>/filename then call load()
             // again with local path
-            new asyncDownload(u, act).execute();
+            final Activity _act = act;
+            Thread thread = new Thread() {
+                @Override
+                public void run() {
+                    new asyncDownload(_u, _act).execute();
+                }
+            };
+            thread.start();
 
         } catch (MalformedURLException ex1) {
             // Missing protocol
 
-            // Copies the file to data/data/<package_name>/filename
-            // Allows the file to be readable from Ejecta-X
-            String mainBundle = "/data/data/" + act.getPackageName();
-            new Utils().copyDatFile(act, mainBundle + "/cache/", source);
-
-            File f = new File("file:///android_asset/" + source);
-
-            ((EjectaGLSurfaceView)mGLView).loadJavaScriptFile(f.getName());
-
-            f = null;
+            Log.d(TAG, "NOT URL: " + source);
+            ((EjectaGLSurfaceView) mGLView).loadJavaScriptFile(source);
 
         } catch (URISyntaxException ex2) {
 
-            // Copies the file to data/data/<package_name>/filename
-            // Allows the file to be readable from Ejecta-X
-            String mainBundle = "/data/data/" + act.getPackageName();
-            new Utils().copyDatFile(act, mainBundle + "/cache/", source);
+            Log.d(TAG, "NOT URL: " + source);
+            ((EjectaGLSurfaceView) mGLView).loadJavaScriptFile(source);
 
-            File f = new File("file:///android_asset/" + source);
-
-            ((EjectaGLSurfaceView)mGLView).loadJavaScriptFile(f.getName());
-
-            f = null;
         }
     }
 
@@ -439,7 +431,7 @@ public class WizCanvas extends View {
             File file = new File("/data/data/" + this.activity.getPackageName() + "/cache/" + filename);
             if (!file.exists()) {
                 // Create the directory if not existing
-                file.mkdirs();
+                file.getParentFile().mkdirs();
             }
 
             Log.d(TAG, "[downloadUrl] *********** /data/data/" + this.activity.getPackageName() + "/cache/" + filename + " > " + file.getAbsolutePath());
@@ -479,7 +471,6 @@ public class WizCanvas extends View {
                 byte[] buffer = new byte[1024];
 
                 int len1 = 0;
-
                 FileOutputStream fos = new FileOutputStream(file);
 
                 while ( (len1 = is.read(buffer)) > 0 ) {
@@ -490,7 +481,13 @@ public class WizCanvas extends View {
                 is.close();
 
                 // Tell Ejecta-X to load file from downloaded path
-                load(activity, filename);
+                final String _src = filename;
+                final Activity _act = activity;
+                activity.runOnUiThread(new Runnable() {
+                    public void run() {
+                        load(_act, _src);
+                    }
+                });
 
             } catch (MalformedURLException e) {
                 Log.e(TAG, "Bad url : ", e);
